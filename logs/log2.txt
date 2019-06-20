@@ -1,0 +1,1 @@
+* Sigmoid can be very slow to learn - if the value passed in is greater than 3 in absolute value, derivative is close to 0. However, we need the final sigmoid, since we want to have resulting values in [0, 1] range so that .round() produces either 0 or 1. So I tried changing the sigmoid in between to ReLU or LeakyReLU and got the needed result with LeakyReLU.
