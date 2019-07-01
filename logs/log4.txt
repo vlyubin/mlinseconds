@@ -1,0 +1,6 @@
+* Copied the previous solution, and modified utils (temporarily) to see output and all tests.
+* Realized that training for more time was beneficial, essenitally removed the condition to stop training once we classify everything correctly.
+* Rprop modifies weights in fixed increments, so it helps to decrease it faster, but it sometimes can't reach minima as a result of this. So for previous tasks it was a good choice, but for this task it's better better to use Adam/RMSprop. I swtiched to RMSprop and I started getting most of the tests on train dataset, but I needed more time.
+* I started thinking in the wrong direction - trying to locate and remove fake columns. I've tried several heuristics, some of which helped to pass extra 2-3 tests, but whenerver you accidentally delete the right columns, it's very hard to pass.
+* I got a hint about minibatches - tried various sizes, found the one that works (there are many options, I picked 768) and that was it.
+* There's an easy way to take the time down a bit - stop iterating once loss (error) becomes lower than certain epsilon, but I was lazy & busy this week ...

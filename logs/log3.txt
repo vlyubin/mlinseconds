@@ -1,0 +1,11 @@
+* I copied solution from helloxor, changed size, learning rate and picked RMSProp as optimizer and the problem was solved (in several hundred steps, 600 if I recall correctly). My activation function was LeakyRELU (just like in helloXor).
+* I ended up adding an extra layer - that shaved off number of steps to 150 (a total of 4 linear units now).
+* I tried to do something smart with the loss, but it only helped marginally. Specifically I tried to zero the loss for cases where we were correct already:
+
+error = (output-target)**2
+error[error < 0.2] = 0
+return error.sum()
+
+* Then I tried some standard losses, and it turned out that cross entropy loss (BCELoss) works great here, decreasing number of steps to 35 (or 45, I don't remember exactly).
+* Ivan Mylyanyk told me about Rprop (I posted a question in the chat) - helped to shave off another 10 steps - 25 now (or 35).
+* Then I decided to look into batch normalization again - I actually tried it as the very first thing, but didn't pass track_running_stats=False, so the scale factors used by this layer were still changing during test time, and in some cases I wouldn't get 100% accuracy that was necessary. I didn't find a quick way to specify train/test - the function call to our code is in utility somewhere (BTW, are we allowed to modify solutionmanager.py?), so I abandoned this idea. Then I saw track_running_stats=False on the internet (to only use current batch data to scale input), and that did magic - under 10 steps!
