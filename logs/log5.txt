@@ -1,0 +1,24 @@
+Monday evening:
+* Copied previous solution, obviously it's shit.
+* Clearly, this task is going to be all about what and how we predict, and what is the loss function to learn that method. The difficulty here is that we don't know the individual results, but only the verdict for a group, making it hard to infer individual results.
+* My first attempt is to predict individual items (so 8 numbers at a time) with the target being the target number of the group. We make modifications to later combine these predictions to predict the thing we want. Doesn't work too good, but can solve 1 and 3 with enough resources and time.
+* My second attempt is to have model that also predicts 1 item at a time, but unlike the previous approach, we will compute loss as a group - we will sum results from each numVoters items, divide by numVoters and pass that into BCELoss (against unmodified target). If I give myself 4 seconds, I can solve cases 1,3,5,7! Not bad at all. Clearly, even cases are bad because of the way tiebreaking is done, but I'll get to that. I'll stick with this approach right now and will try to get the "learning" pointed in the right direction by improving error function. Some ideas I have are:
+- Forcing items to be as far away from 1/2 as possible - by penalizing (output - 1/2)**2
+- "Rounding" numVoter items before doing a sum of them. We can't just do round because that will kill backprop, so we'll need something different.
+* Stay away from 1/2 idea is bad. Hm, maybe (min(x, 1-x))**2 will do?
+* Nope ^
+* I decided to deal with timing issue and reduce the size of my network by decreasing layer sizes. Now I can pass tests 1,3,5,7 within 2 seconds. Not quite enough to pass 9, and still unsure about even cases.
+* I noticed something super weird when playing with losses - if I subtract 0.001 * (output)**3 from the loss, I can pass tests 2 and 4! The only thing that it adds is regularization, but powers 2 and 4 don't help! So weird, not sure what's going on. Time to go to bed, 1 AM.
+
+Tuesday evening:
+* Ok, I just spent 2 hours watching youtube music videos. That did not help me with this problem.
+* Clearly, the benefit I'm getting from 0.001 * (output)**3 comes from the fact that it encourages more 1's. And the fundamental issue we have at hand is that inputs are imbalanced - for every even test case number of zeroes is more than 2x the number of ones (among outputs)! This forces our model to prefer 0 over 1 for individual items, when I don't want this. And the solution is obvious - implement balanced batches, where each batch has equal number of zeroes and ones.
+* Ok, took me about 15 minutes to implement them and 5 min to debug. Getting old :( Code looks like shit, but still better than ACM code )
+* Woo-hoo! Tuned learning rate a bit and this solves first 8 cases! On test case 9 I get 8109/8192 on train and 8192/8192 on test (so technically it's good), on test case 10 I get 8115/8192, 8111/8192. Clearly, I'm very close, so I don't think there are any more fundamental challenges - just gotta pick the good parameters.
+* That took a bit longer than expected - my solution suffered from instability, which was probably because it didn't have enough time to train. So I ended up decreasing my NN size, which only had a positive effect on my network. I'm done now!
+* There was a little instability - solution would pass 4/5 times, so I further decreased network size, and implement early brek from training loop when a streak of 100% accuracy predictions happens. Solvable in 1 second now.
+
+So in retrospective, there were three challenges:
+* Understand what to train on. Garbage in -> garbage out. Your NN doesn't understand that you'll feed it 8 x voter_info, so you should feed 8 items at a time.
+* As my first attempt has shown, it can't predict well based on assigning result for the entire section - the loss function has to be smarter: here it was propagating the error from the group result. This isn't nearly as complicated as some stuff that happens in real papers though )
+* Lastly, either read the code and understand what data you're getting, or inspect it. There was an imbalance between 0 and 1 cases in training data, and this poises difficulties. I've known from previous ML courses that we should balance input dataset for classification tasks so that each class gets equal representation (depening on error function though, there are weird exceptions), so after I noticed that having more 1's helps (while meddling with loss function), I did exactly that.
