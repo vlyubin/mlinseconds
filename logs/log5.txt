@@ -18,7 +18,10 @@ Tuesday evening:
 * That took a bit longer than expected - my solution suffered from instability, which was probably because it didn't have enough time to train. So I ended up decreasing my NN size, which only had a positive effect on my network. I'm done now!
 * There was a little instability - solution would pass 4/5 times, so I further decreased network size, and implement early brek from training loop when a streak of 100% accuracy predictions happens. Solvable in 1 second now.
 
+Extra:
+* Change optimizer to Adam, tweaked batch size to get a better score.
+
 So in retrospective, there were three challenges:
-* Understand what to train on. Garbage in -> garbage out. Your NN doesn't understand that you'll feed it 8 x voter_info, so you should feed 8 items at a time.
+* Understand what to train on. Garbage in -> garbage out. Your NN doesn't understand that you'll feed it 8 x voter_info, so you should feed 8 numbers (1 voter) at a time.
 * As my first attempt has shown, it can't predict well based on assigning result for the entire section - the loss function has to be smarter: here it was propagating the error from the group result. This isn't nearly as complicated as some stuff that happens in real papers though )
 * Lastly, either read the code and understand what data you're getting, or inspect it. There was an imbalance between 0 and 1 cases in training data, and this poises difficulties. I've known from previous ML courses that we should balance input dataset for classification tasks so that each class gets equal representation (depening on error function though, there are weird exceptions), so after I noticed that having more 1's helps (while meddling with loss function), I did exactly that.
