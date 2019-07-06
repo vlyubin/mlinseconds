@@ -76,7 +76,7 @@ class SolutionModel(nn.Module):
 class Solution():
     def __init__(self):
         # Control speed of learning
-        self.learning_rate = 0.007
+        self.learning_rate = 0.008
         # Control number of hidden neurons. "Why 42?" you might ask. Well, read this:
         # https://en.wikipedia.org/wiki/42_(number)#The_Hitchhiker's_Guide_to_the_Galaxy
         self.hidden_size = [32, 42, 42]
@@ -110,7 +110,7 @@ class Solution():
         train_data_0 = train_data_0.view(-1, 8)
         train_data_1 = train_data_1.view(-1, 8)
 
-        HALF_BATCH_SIZE = 384
+        HALF_BATCH_SIZE = 256
         print('Training started!')
 
         model = SolutionModel(8, 1, self)
@@ -118,7 +118,7 @@ class Solution():
         model.num_voters = num_voters
 
         # Optimizer used for training neural network
-        optimizer = optim.RMSprop(model.parameters(), lr=self.learning_rate)
+        optimizer = optim.Adam(model.parameters(), lr=self.learning_rate)
 
         batch_idx_0 = 0
         batch_idx_1 = 0
