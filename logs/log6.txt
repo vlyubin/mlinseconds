@@ -1,0 +1,5 @@
+* I did mnist before - it's pretty hard (although not impossible to do it with only Linear layers, but it's really hard), so we would want a model with some convolutional layers in it
+* Pytorch has great official repo of examples - https://github.com/pytorch/examples, and two of those models are made for mnist.
+* I tried the `mnist` one, but it was way too large in size, but `mnist_hogwild` was good. Nothing that special about this model - some Conv2d + max_pool, followed by 2 linear layers. Picking all the appropriate numbers and kernel sizes is a bit time consuming, so this is a bit of a shortcut.
+* Did all "engineering" work to put that model into existing condition (change data format to be 10 classes rather than 1 number). It almost passes on cpu - gets 93-94%, just a bit short.
+* Used google colab for a free GPU, passes there easily. Optimized a bit to improve a score, but didn't even do a proper grid search for an even better one. It's so cool that google does this, free GPU is crazy! I used to use AWS because I had some free credits, but now colab is totally a better option - thanks for pointing it out!
