@@ -1,18 +1,158 @@
-import time
-import random
 import torch
-import torchvision
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
+import numpy as np
 from ..utils import solutionmanager as sm
 from ..utils import gridsearch as gs
 
+NUM_FEATURES = 4
+
+class SolutionModel(nn.Module):
+    def __init__(self, input_size, output_size, solution):
+        super(SolutionModel, self).__init__()
+        self.input_size = input_size
+        self.hidden_size = solution.hidden_size
+        self.linear1 = nn.Linear(input_size, self.hidden_size[0])
+        self.linear2 = nn.Linear(self.hidden_size[0], self.hidden_size[1])
+        self.linear3 = nn.Linear(self.hidden_size[1], self.hidden_size[2])
+        self.linear4 = nn.Linear(self.hidden_size[2], output_size)
+
+        self.batch_norm1 = nn.BatchNorm1d(self.hidden_size[0], track_running_stats=False)
+        self.batch_norm2 = nn.BatchNorm1d(self.hidden_size[1], track_running_stats=False)
+        self.batch_norm3 = nn.BatchNorm1d(self.hidden_size[2], track_running_stats=False)
+        self.batch_norm4 = nn.BatchNorm1d(output_size, track_running_stats=False)
+
+        self.net = nn.Sequential(
+            self.linear1,
+            torch.nn.LeakyReLU(0.01),
+            self.batch_norm1,
+
+            self.linear2,
+            torch.nn.LeakyReLU(0.01),
+            self.batch_norm2,
+
+            self.linear3,
+            torch.nn.LeakyReLU(0.01),
+            self.batch_norm3,
+
+            self.linear4,
+            self.batch_norm4,
+            torch.nn.Sigmoid()
+        )
+
+        self.loss = nn.BCELoss()
+
+    def forward(self, x):
+        if not self.is_training:
+            x_featurized = torch.zeros([x.size(0), NUM_FEATURES], dtype=torch.float32)
+            # Make an array having 2*item[row,i] + item[row,i+1] sums
+            special = (2 * x[:, :-1] + x[:, 1:]).data.numpy()
+            for i in range(NUM_FEATURES):
+                counts = np.where(special == i, np.ones(special.shape),
+                                  np.zeros(special.shape)).sum(axis=1)
+                x_featurized[:, i] += torch.FloatTensor(counts)
+            return self.net(x_featurized)
+
+        return self.net(x)
+
+    def calc_error(self, output, target):
+        # This is loss function
+        error = self.loss(output, target)
+        return error.sum()
+
+    def calc_predict(self, output):
+        # Simple round output to predict value
+        return output.round()
+
 class Solution():
+    def __init__(self):
+        # Control speed of learning
+        self.learning_rate = 0.01
+        # Control number of hidden neurons
+        self.hidden_size = [110, 50, 25]
+
+        # grid search will initialize this field
+        self.grid_search = None
+        # grid search will initialize this field
+        self.iter = 0
+        # This fields indicate how many times to run with same arguments
+        self.iter_number = 2
+
     # Return trained model
     def train_model(self, train_data, train_target, context):
-        print("See helloXor for solution template")
-        exit(0)
+        print('Featurizing train data!')
+        train_data_featurized = torch.zeros([train_data.size(0), NUM_FEATURES], dtype=torch.float32)
+
+        # Make an array having 2*item[row,i] + item[row,i+1] sums
+        special = (2 * train_data[:, :-1] + train_data[:, 1:]).data.numpy()
+
+        # Effectively train_data_featurized is just 4 numbers for each test - number of 00, 01, 10, 11
+        # in the sequence. Since state transitions only depend on the previous number, this gives
+        # a good guidance of what's happening.
+        for i in range(NUM_FEATURES):
+            counts = np.where(special == i, np.ones(special.shape), np.zeros(special.shape)).sum(axis=1)
+            train_data_featurized[:, i] += torch.FloatTensor(counts)
+
+        BATCH_SIZE = 256
+        print('Training started!')
+        model = SolutionModel(train_data_featurized.size(1), 1, self)
+
+        if torch.cuda.is_available():
+            model.cuda()
+            train_data_featurized = train_data_featurized.cuda()
+            train_target = train_target.cuda()
+
+        # Optimizer used for training neural network
+        optimizer = optim.Adam(model.parameters(), lr=self.learning_rate)
+        batch_idx = 0
+        model.is_training = True
+
+        while True:
+            # Report step, so we know how many steps
+            context.increase_step()
+            # model.parameters()...gradient set to zero
+            optimizer.zero_grad()
+            # train on a batch
+            batch = train_data_featurized[batch_idx:batch_idx + BATCH_SIZE, :]
+            # evaluate model => model.forward(data)
+
+            output = model(batch)
+            # if x < 0.5 predict 0 else predict 1
+            predict = model.calc_predict(output)
+            # Number of correct predictions
+            correct = predict.eq(train_target[batch_idx:batch_idx + BATCH_SIZE].view_as(predict)).long().sum().item()
+            # Total number of needed predictions
+            total = predict.view(-1).size(0)
+
+
+            # No more time left or learned everything, stop training
+            time_left = context.get_timer().get_time_left()
+            # calculate error
+            loss = model.calc_error(output, train_target[batch_idx:batch_idx + BATCH_SIZE])
+
+            if time_left < 0.15:
+                self.print_stats(context.step, loss, correct, total, force=True)
+                break
+
+            loss.backward()
+            # print progress of the learning
+            self.print_stats(context.step, loss, correct, total)
+            # update model: model.parameters() -= lr * gradient
+            optimizer.step()
+            # increment batch index
+            batch_idx += BATCH_SIZE
+            if batch_idx >= train_data.size(0):
+                batch_idx = 0
+
+        model.is_training = False
+        print('Training is done!')
+        return model
+
+    def print_stats(self, step, error, correct, total, force=False):
+        if step % 25 == 0:
+            print("Step = {} Correct = {}/{} Error = {}".format(step, correct, total, error.item()))
+
 
 ###
 ###
