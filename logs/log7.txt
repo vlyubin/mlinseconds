@@ -1,0 +1,14 @@
+* I started with the idea to use RNNs - since each state only depends on the previous element, RNNs should be able to capture this. I wrote a solution using LSTMs, but it didn't work even on the first test case, even though it was exactly like some tutorials I saw. I would love to see how to solve this problem via RNNs.
+* Since that failed, I decided to explore a much simpler idea - effectively RNNs capture transitions well, so why can't I engineer that myself? Strings 10101010 and 11110000 are obviously of different nature, even though they have an equal number of 0's and 1's. But if we look at two character blocks, we'll see 10,01,10,01,10,01... and 11,11,11,10,00,00,00. That allows us to differentiate quite well. In the test example we have:
+
+11100000=>0
+00000000=>0
+11010110=>1
+01110000=>0
+01010101=>1
+
+As you can see, strings that have long streak of zeroes belong to "0" class, since there's a 95% transition with 0 output.
+* Originally I planned to "featurize" the string in a following way - for some K, count the number of occurences for each possible binary string of length 1 ... K (or even just K). We will afterwards pass those counts into a neural net, which should be able to differentiate classes based on those counts. I satrted with K = 2, and was amazed that this got the job done!
+* So all I do is convert each input into 4 numbers - count of (00, 01, 10, 11). Then this info is fed into NN. We don't need any other info from the original string :)
+* Effectively 00, 01, 10, 11 give us probabilities of going from 0/1 -> 0/1 across all states, and the way sequences are constructed, they often have imbalance there.
+* I took NN from previous exercises, but that's an overkill since we only have 4 numbers :)
